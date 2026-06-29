@@ -13,7 +13,8 @@ export default defineConfig({
   },
   themeConfig: {
     nav: [
-      { text: 'Lab', link: 'https://flows-audio.github.io/flows-lab/' },
+      // Restore this when Flows Lab is ready to be public.
+      // { text: 'Lab', link: 'https://flows-audio.github.io/flows-lab/' },
       { text: 'GitHub', link: 'https://github.com/flows-audio' }
     ],
     search: {

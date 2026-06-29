@@ -7,8 +7,10 @@ instrument: readable, editable, inspectable, and directly connected to sound.
 
 ## Projects
 
+<!-- Restore this when Flows Lab is ready to be public.
 - [Flows Lab](https://flows-audio.github.io/flows-lab/) — synthesis lessons,
   patch studies, and runnable `.flow` experiments.
+-->
 - [GitHub](https://github.com/flows-audio) — public repositories under
   `flows-audio`.
 
