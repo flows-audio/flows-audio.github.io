@@ -413,7 +413,7 @@ def echo(x, time, feedback: 0.3, mix: 0.25) = {
 }
 ```
 
-### `chorus`  ·  C++ kernel
+### `chorus`  ·  self-hosted
 
 ```flow
 chorus(x, rate: 0.3hz, depth: 0.4, mix: 0.5) -> stereo
@@ -427,9 +427,19 @@ chorus(x, rate: 0.3hz, depth: 0.4, mix: 0.5) -> stereo
 | `mix` | signal (0..1), mono | `0.5` | dry/wet blend |
 
 - **Model** — a delay of `15ms ± 5ms·depth·sin(2π·lfo)`; the right channel taps a
-  quarter-cycle ahead for stereo width.
-- **Developer-mode equivalent** — **deferred**: needs a fractional (interpolated)
-  delay read, which `delayline` does not yet provide.
+  quarter-cycle ahead for stereo width. Self-hosts now that `delayline`
+  interpolates and `stereo`/`left`/`right` give per-channel access.
+
+```flow
+def chorus(x, rate: 0.3hz, depth: 0.4, mix: 0.5) = {
+  lp = phasor(rate)
+  dep = clip(depth, 0, 1)
+  dL = 0.015 + 0.005 * dep * sin(lp * 6.283185307179586)
+  dR = 0.015 + 0.005 * dep * sin((lp + 0.25) * 6.283185307179586)
+  wet = stereo(left(delayline(x, dL)), right(delayline(x, dR)))
+  x * (1 - mix) + wet * mix
+}
+```
 
 ### `reverb`  ·  C++ kernel
 
@@ -478,7 +488,7 @@ between layer ② and ③.
 - `mix()` does **not** normalize a chord. Leave headroom:
   `mix(voice, gain: -6db)`.
 
-### `pan`  ·  C++ kernel
+### `pan`  ·  self-hosted
 
 ```flow
 pan(x, pos: 0) -> stereo
@@ -490,9 +500,16 @@ pan(x, pos: 0) -> stereo
 | `pos` | signal (-1..1), mono | `0` | −1 = left, 0 = centre, +1 = right |
 
 - **Model** — equal-power balance: `ang = (pos+1)·π/4`,
-  `L = x.l·cos(ang)`, `R = x.r·sin(ang)`.
-- **Developer-mode equivalent** — **deferred**: needs per-channel (L/R) access,
-  which the language does not yet expose.
+  `L = x.l·cos(ang)`, `R = x.r·sin(ang)`. Self-hosts via the per-channel
+  primitives.
+
+```flow
+def pan(x, pos: 0) = {
+  p = clip(pos, -1, 1)
+  ang = (p + 1) * 0.7853981633974483
+  stereo(left(x) * cos(ang), right(x) * sin(ang))
+}
+```
 
 ### `gain`  ·  C++ kernel
 

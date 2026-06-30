@@ -156,6 +156,50 @@ select(cond, a, b) -> signal
 
 ---
 
+## Per-channel access
+
+Signals are mono-or-stereo, but most nodes preserve channels in parallel. These
+three primitives are the only way a `def` reaches *into* the stereo pair — to read
+one channel, or to build a signal where the two channels differ. They are what let
+`pan` and a stereo `chorus` self-host.
+
+### `left` · `right`
+
+```flow
+left(x) -> signal      right(x) -> signal
+```
+
+| Param | Type | Description |
+| --- | --- | --- |
+| `x` | signal | input |
+
+- **Returns** a mono signal carrying one channel of `x`, broadcast to both outputs
+  (`left(x)` → `{x.l, x.l}`).
+
+### `stereo`
+
+```flow
+stereo(l, r) -> signal
+```
+
+| Param | Type | Description |
+| --- | --- | --- |
+| `l` | signal | becomes the **left** output channel (its left channel is taken) |
+| `r` | signal | becomes the **right** output channel |
+
+- **Returns** a stereo signal `{l.l, r.l}` — the only primitive that produces
+  `L ≠ R` from mono inputs.
+
+```flow
+def pan(x, pos: 0) = {              # equal-power balance, self-hosted
+  p = clip(pos, -1, 1)
+  ang = (p + 1) * 0.7853981633974483
+  stereo(left(x) * cos(ang), right(x) * sin(ang))
+}
+```
+
+---
+
 ## Filters
 
 ### `onepole`
@@ -270,8 +314,9 @@ same kind of state boundary as `z1`, just longer.
 | `x` | signal | — | input, per channel |
 | `time` | signal (s), mono | `0.001` | delay length, clamped to `[1 sample, 1 s]` |
 
-- **Integer-sample** delay: `d = round(time·sr)`, so very high pitches detune
-  slightly. (Fractional / variable-rate reads are **deferred**.)
+- **Fractional** read: the real delay `D = time·sr` is **linearly interpolated**
+  between the two straddling samples, so a swept `time` (chorus/flanger) and an
+  arbitrary string pitch are both smooth.
 - The buffer is preallocated at compile time, so the audio thread never
   allocates.
 - Only `time` ≤ **1 second** is supported (the ring buffer size).
@@ -286,6 +331,27 @@ def pluck(freq, decay: 0.5) = {
   y
 }
 ```
+
+### `apdelay`
+
+```flow
+apdelay(x, time) -> signal
+```
+
+A delay with **allpass** (not linear) interpolation: an integer delay line plus a
+first-order allpass `(η + z⁻¹)/(1 + η·z⁻¹)`, `η = (1−frac)/(1+frac)`, for the
+fractional sample.
+
+| Param | Type | Default | Description |
+| --- | --- | --- | --- |
+| `x` | signal | — | input, per channel |
+| `time` | signal (s), mono | `0.001` | delay length, clamped to `[1 sample, 1 s]` |
+
+- **Flat magnitude** — unlike linear interpolation it does not roll off highs, so
+  it tunes a fixed-pitch Karplus-Strong string more accurately. At an integer
+  delay it collapses to a pole-zero identity (a plain delay).
+- **Trade-off** — the allpass is recursive, so a rapidly **swept** `time` clicks;
+  prefer `delayline` (linear) for chorus/vibrato. Same feedback-boundary rules.
 
 ---
 
