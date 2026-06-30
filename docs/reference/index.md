@@ -107,13 +107,14 @@ poly { ... }                                  # all held notes sound in parallel
 poly(voices: 16) { ... }                      # cap polyphony
 mono(glide: 30ms, priority: last) { ... }     # one voice, portamento, note priority
 arp(rate: 1/16, mode: up, gate: 0.5, octaves: 1) { ... }   # held chord → arpeggio
+arp(rate: 1/16, pattern: [0, 12, 7, 3]) { ... }            # custom step sequence
 ```
 
 | Block | Parameters | Status |
 | --- | --- | --- |
 | `poly` | `voices: 16` (max polyphony), `glide: 0ms` | implemented (allocation + stealing) |
 | `mono` | `glide: 0ms`, `priority: last \| low \| high` | implemented |
-| `arp` | `rate` (tempo division), `mode: up \| down \| updown \| random`, `gate: 0..1`, `octaves: 1..4` | implemented |
+| `arp` | `rate` (tempo division), `mode: up \| down \| updown \| random`, `gate: 0..1`, `octaves: 1..4`, `pattern: [s0, s1, …]` (semitone offsets from the lowest held note; overrides `mode`/`octaves`) | implemented |
 
 Each call inside a block is a **stateful instance**, replicated per voice; that is
 the same replication concept as polyphony and unison.

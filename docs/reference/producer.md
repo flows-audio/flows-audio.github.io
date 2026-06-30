@@ -92,7 +92,7 @@ Anti-aliased pulse / square.
 - **Developer-mode equivalent** — [`bl_square`](./developer#bl-saw-bl-square),
   bit-exact.
 
-### `triangle`  ·  C++ kernel
+### `triangle`  ·  self-hosted
 
 ```flow
 triangle(freq) -> signal
@@ -104,7 +104,6 @@ triangle(freq) -> signal
 
 - **Returns** mono signal in `[-1, 1]`.
 - **Model** — `y = 4·|p − 0.5| − 1` over the phasor ramp `p` (not band-limited).
-- **Developer-mode equivalent** (illustrative):
 
 ```flow
 def triangle(freq) = {
@@ -354,8 +353,12 @@ A low-frequency modulator.
   = `4·|p−0.5|−1`; `saw` = `2p−1`; `square` = `±1` at the half-cycle; `random` =
   sample-and-hold (a new value latched each cycle).
 
-> A developer-mode `def` over `phasor` + `select` can express `sine/tri/saw/square`
-> directly; `random` additionally needs an RNG primitive (not yet exposed).
+> **Why `lfo` stays a C++ kernel.** Each individual shape is expressible — a `def`
+> over `phasor` + `select` covers `sine/tri/saw/square`, and `random` is a
+> sample-and-hold built from `noise()` + `reg`. The blocker is the **compile-time
+> `shape` enum**: a `def` cannot receive `shape: sine` and branch on it, so a
+> single `lfo(rate, shape:)` def is not expressible until the language has
+> compile-time enum arguments.
 
 ---
 
@@ -511,7 +514,7 @@ def pan(x, pos: 0) = {
 }
 ```
 
-### `gain`  ·  C++ kernel
+### `gain`  ·  self-hosted
 
 ```flow
 gain(x, level: 0db) -> signal
@@ -523,7 +526,6 @@ gain(x, level: 0db) -> signal
 | `level` | signal (db), mono | `0db` | gain in decibels |
 
 - **Model** — `y = x · 10^(level/20)`.
-- **Developer-mode equivalent** (illustrative):
 
 ```flow
 def gain(x, level: 0) =
